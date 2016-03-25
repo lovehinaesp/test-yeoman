@@ -1,23 +1,69 @@
-<div class="jumbotron">
-  <h1>'Allo, 'Allo!</h1>
-  <p class="lead">
-    <img src="images/yeoman.png" alt="I'm Yeoman"><br>
-    Always a pleasure scaffolding your apps.
-  </p>
-  <p><a class="btn btn-lg btn-success" ng-href="#">Splendid!<span class="glyphicon glyphicon-ok"></span></a></p>
+<div class="container-fluid">
+    <h2>Grupo A {{groupA.id}}</h2>
+    <div layout="row">
+        <p flex>Hambre: {{groupA.stats.hambre}}</p>
+        <p flex>Cansancio: {{groupA.stats.cansancio}}</p>
+        <p flex>Sigilo: {{groupA.stats.sigilo}}</p>
+        <p flex>Percepción: {{groupA.stats.percepcion}}</p>
+        <p flex>Miedo: {{groupA.stats.miedo}}</p>
+    </div>
+    <div layout="row">
+        <div ng-repeat="merc in groupA.mercs" flex="20">
+            <p><strong>Nombre: {{merc.name}} [{{merc.nivel}}]</strong></p>
+            <p><em>Fuerza</em>: {{merc.fuerza}}</p>
+            <p><em>Constitución</em>: {{merc.constitucion}}</p>
+            <p><em>Agilidad</em>: {{merc.agilidad}}</p>
+            <p><em>Conocimiento</em>: {{merc.conocimiento}}</p>
+            <p>Daño: {{merc.dano}}</p>
+            <p>Reducción: {{merc.reduccion}}</p>
+            <p>Vida: {{merc.vida}}</p>
+            <p>Reflejos: {{merc.reflejos}}</p>
+            <p>Sigilo: {{merc.sigilo}}</p>
+            <p>Percepción: {{merc.percepcion}}</p>
+            <p>R.Venenos: {{merc.veneno}}</p>
+            <p>Hambre: {{merc.hambre}}</p>
+            <p>Cansancio: {{merc.cansancio}}</p>
+            <p>Curación: {{merc.curacion}}</p>
+            <p>Especialidad: {{merc.especialidad}}</p>
+        </div>
+    </div>
+
+    <h2>Grupo B {{groupB.id}}</h2>
+    <div layout="row">
+        <p flex>Hambre: {{groupB.stats.hambre}}</p>
+        <p flex>Cansancio: {{groupB.stats.cansancio}}</p>
+        <p flex>Sigilo: {{groupB.stats.sigilo}}</p>
+        <p flex>Percepción: {{groupB.stats.percepcion}}</p>
+        <p flex>Miedo: {{groupB.stats.miedo}}</p>
+    </div>
+    <div layout="row">
+        <div ng-repeat="merc in groupB.mercs" flex="20">
+            <p><strong>Nombre: {{merc.name}} [{{merc.nivel}}]</strong></p>
+            <p><em>Fuerza</em>: {{merc.fuerza}}</p>
+            <p><em>Constitución</em>: {{merc.constitucion}}</p>
+            <p><em>Agilidad</em>: {{merc.agilidad}}</p>
+            <p><em>Conocimiento</em>: {{merc.conocimiento}}</p>
+            <p>Daño: {{merc.dano}}</p>
+            <p>Reducción: {{merc.reduccion}}</p>
+            <p>Vida: {{merc.vida}}</p>
+            <p>Reflejos: {{merc.reflejos}}</p>
+            <p>Sigilo: {{merc.sigilo}}</p>
+            <p>Percepción: {{merc.percepcion}}</p>
+            <p>R.Venenos: {{merc.veneno}}</p>
+            <p>Hambre: {{merc.hambre}}</p>
+            <p>Cansancio: {{merc.cansancio}}</p>
+            <p>Curación: {{merc.curacion}}</p>
+            <p>Especialidad: {{merc.especialidad}}</p>
+        </div>
+    </div>
 </div>
 
-<div class="row marketing">
-  <h4>HTML5 Boilerplate</h4>
-  <p>
-    HTML5 Boilerplate is a professional front-end template for building fast, robust, and adaptable web apps or sites.
-  </p>
+<p>
+    <md-button ng-click="start()" class="md-raised">Empezar combate</md-button>
+</p>
 
-  <h4>Angular</h4>
-  <p>
-    AngularJS is a toolset for building the framework most suited to your application development.
-  </p>
-
-  <h4>Karma</h4>
-  <p>Spectacular Test Runner for JavaScript.</p>
+<div>
+    <p ng-repeat="entry in history track by $index">
+        {{entry}}
+    </p>
 </div>
