@@ -48,53 +48,171 @@ angular.module('yeomanApp').controller('MainCtrl', ['$scope', 'Utils', function 
         }
 
         //**** INICIO EL PRIMER TURNO
-        inicioTurno(true, quienEmbosca);
+        nuevoTurno(true, quienEmbosca);
     }
 
-    function inicioTurno(esPrimerTurno, idGrupoQueEmbosca) {
-        var personajes = Utils.listarPersonajes($scope.groupA, $scope.groupB);
-    
+    function nuevoTurno(esPrimerTurno, idGrupoQueEmbosca) {
+        // Miro a ver si quedan personajes en ambos grupos, por si acaso
+        if (combateFinalizado()) {
+            history("FIN DE LA MASACRE");
+            return;
+        }
+
+        var personajes = Utils.listarPersonajes($scope.groupA.mercs, $scope.groupB.mercs),
+            arrayTodosPersonajes = $scope.groupA.mercs.concat($scope.groupB.mercs);
+
         //**** Lo primero es ordenar los mercenarios por orden de actuación (reflejos) este turno
-        var ordenActuacionMercenarios = Utils.ordenarPersonajesPorReflejos($scope.groupA, $scope.groupB, 0, 0);
+        var ordenActuacionMercenarios = Utils.ordenarPersonajesPorReflejos(arrayTodosPersonajes, 0, 0, idGrupoQueEmbosca);
 
         //**** Si es el primer turno y alguien embosca, sólo actúa ese grupo
-        if (esPrimerTurno && idGrupoQueEmbosca) {
-            ordenActuacionMercenarios = Utils.emboscada(ordenActuacionMercenarios, idGrupoQueEmbosca);
-        }
+        /*if (esPrimerTurno && idGrupoQueEmbosca) {
+         ordenActuacionMercenarios = Utils.emboscada(ordenActuacionMercenarios, idGrupoQueEmbosca);
+         }*/
 
         //LOG
         ordenActuacionMercenarios.forEach(function (m) {
-            history("Actúa " + m.name + " del grupo " + m.group);
+            history("Actúa " + personajes[m].name + " del grupo " + personajes[m].group);
         });
 
-        //**** Ahora calculamos el nivel de amenaza de cada mercenario
-        var ordenAmenazaMercenarios = Utils.calcularAmenazaPersonajes(ordenActuacionMercenarios, $scope.groupA.id);
-
-        //LOG
-        ordenAmenazaMercenarios.grupoA.forEach(function (m) {
-            history("Amenaza de " + m.name + " del grupo A " + m.group + " -> " + m.amenaza);
-        });
-        ordenAmenazaMercenarios.grupoB.forEach(function (m) {
-            history("Amenaza de " + m.name + " del grupo B " + m.group + " -> " + m.amenaza);
-        });
 
         //**** Si no es el primer turno calculo los miedos de los grupos y miro si alguno huye
-        var continuaCombate = true;
         if (!esPrimerTurno) {
             // TODO calcular miedo
-            // TODO calcular si huye alguno
+            // TODO calcular si huye alguno => return y fin de combate
         }
 
-        // Si continua el combate pasaré a las acciones de cada personaje
-        if (continuaCombate) {
-            //**** Voy viendo qué hace cada personaje
-            inicioCombate();
-        }
+        //**** Voy viendo qué hace cada personaje
+        inicioCombate(personajes, ordenActuacionMercenarios);
     }
 
 
-    function inicioCombate() {
+    function inicioCombate(personajes, ordenActuacionMercenarios) {
+        var arrayTodosPersonajes, muertosEnCombate = [], i,
+            combateTerminado = false;
 
+        // Por cada personaje de la lista de orden de actuación
+        for (i = 0; i < ordenActuacionMercenarios.length; i++) {
+            var idMerc = ordenActuacionMercenarios[i];
+
+            // Si el pj que estoy mirando ha muerto en este combate, no sigo
+            if (muertosEnCombate.indexOf(idMerc) !== -1) {
+                continue;
+            }
+
+            arrayTodosPersonajes = $scope.groupA.mercs.concat($scope.groupB.mercs);
+
+            //**** Calculamos el nivel de amenaza de cada mercenario
+            var ordenAmenazaMercenarios = Utils.calcularAmenazaPersonajes(arrayTodosPersonajes, $scope.groupA.id, $scope.groupB.id);
+            console.log("ORDEN AMENAZA (estoy con " + idMerc + ")");
+            console.log(ordenAmenazaMercenarios);
+
+            //LOG
+            console.info(personajes);
+            ordenAmenazaMercenarios[$scope.groupA.id].forEach(function (m) {
+                history("    -> Amenaza de " + personajes[m.id].name + " del grupo A " + personajes[m.id].group + " -> " + m.amenaza);
+            });
+            ordenAmenazaMercenarios[$scope.groupB.id].forEach(function (m) {
+                history("    -> Amenaza de " + personajes[m.id].name + " del grupo B " + personajes[m.id].group + " -> " + m.amenaza);
+            });
+
+            // Grupo del personaje y grupo rival
+            var ownGroup, rivalGroup;
+
+            if (personajes[idMerc].group === $scope.groupA.id) {
+                ownGroup = $scope.groupA.id;
+                rivalGroup = $scope.groupB.id;
+            } else {
+                ownGroup = $scope.groupB.id;
+                rivalGroup = $scope.groupA.id;
+            }
+
+            // Selección de un objetivo rival según el nivel de amenaza
+            var idTarget = Utils.seleccionaObjetivo(ordenAmenazaMercenarios[rivalGroup]);
+
+            // El personaje ataca al rival
+            console.log("Antes");
+            console.log(personajes[idTarget]);
+            enfrentamientoPersonajes(personajes[idMerc], personajes[idTarget]);
+            console.log("Despues:");
+            console.log(personajes[idTarget]);
+
+            // Si ha muerto el objetivo, lo elimino de la lista
+            if (personajes[idTarget].vidaRestante <= 0) {
+                history("*** Ha muerto " + personajes[idTarget].name);
+                console.warn("MUERE " + personajes[idTarget].name + "(" + idTarget + ")");
+                matarPersonaje(rivalGroup, idTarget);
+
+                // Llevo la cuenta de los caídos
+                muertosEnCombate.push(idTarget);
+
+                // A ver no sea que no quede nadie
+                combateTerminado = combateFinalizado();
+                if (combateTerminado) {
+                    history("FIN DE LA MASACRE");
+                    break;
+                }
+            }
+        }
+
+        // Una vez han actuado todos los personajes hago lo que sea antes de dar por terminado el turno
+        if (!combateTerminado) {
+            nuevoTurno(false, null);
+        }
+    }
+
+    /**
+     * Compruebo si alguno de los grupos ya no tiene personajes
+     */
+    function combateFinalizado() {
+        var countA = Utils.contarPersonajes($scope.groupA.mercs),
+            countB = Utils.contarPersonajes($scope.groupB.mercs);
+
+        return (countA === 0 || countB === 0);
+    }
+
+    /**
+     * Elimino al pj de la lista en scope
+     */
+    function matarPersonaje(grupo, idPersonaje) {
+        console.info("ANTES " + $scope.groupA.mercs.length + " " + $scope.groupB.mercs.length);
+        if ($scope.groupA.id === grupo) {
+            $scope.groupA.mercs.forEach(function (pj, index) {
+                if (pj.id === idPersonaje) {
+                    console.log(index);
+                    console.log($scope.groupA.mercs);
+                    delete $scope.groupA.mercs[index];
+                }
+            });
+        } else {
+            $scope.groupB.mercs.forEach(function (pj, index) {
+                if (pj.id === idPersonaje) {
+                    console.log(index);
+                    delete $scope.groupB.mercs[index];
+                }
+            });
+        }
+
+        console.info("DESPUES " + $scope.groupA.mercs.length + " " + $scope.groupB.mercs.length);
+    }
+
+    function enfrentamientoPersonajes(pjAtacante, pjDefensor) {
+        // El daño que hace el pj es el del arma que lleve más el suyo.
+        var damageA = pjAtacante.dano;
+
+        // La reducción de daño del defensor es un % que si pasa la tirada recibe la mitad de daño.
+        var reduccion = pjDefensor.reduccion;
+        var tirada = Utils.dado(100, 1);
+        if (tirada <= reduccion) {
+            damageA = Math.ceil(damageA / 2);
+        }
+
+        var vidaAntes = pjDefensor.vidaRestante;
+
+        // Resto el daño final a la vida del defensor
+        pjDefensor.vidaRestante -= damageA;
+
+        history(pjAtacante.name + " ataca a " + pjDefensor.name + " y le hace " + damageA +
+            " puntos de daño, bajándole la vida de " + vidaAntes + " a " + pjDefensor.vidaRestante);
     }
 
     /************************************************************************/
@@ -122,7 +240,7 @@ angular.module('yeomanApp').controller('MainCtrl', ['$scope', 'Utils', function 
     function generateMerc(grupo) {
         var merc = {};
 
-        merc.id = random() + random() + random() + random() + random() + random();
+        merc.id = "" + random() + random() + random() + random() + random() + random();
         merc.name = "MERC" + random() + random() + random();
         merc.group = grupo;
         merc.nivel = random();
@@ -139,7 +257,7 @@ angular.module('yeomanApp').controller('MainCtrl', ['$scope', 'Utils', function 
 
         stats.dano = (merc.fuerza + merc.constitucion) * 5;
         stats.reduccion = (merc.fuerza + merc.agilidad) * 5;
-        stats.vida = (merc.fuerza + merc.constitucion) * 5;
+        stats.vida = ((merc.fuerza + merc.constitucion) * 5) + 100;
         stats.vidaRestante = stats.vida;
         stats.sigilo = (merc.conocimiento + merc.agilidad) * 5;
         stats.reflejos = (merc.fuerza + merc.agilidad) * 5;

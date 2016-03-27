@@ -8,7 +8,7 @@
         <p flex>Miedo: {{groupA.stats.miedo}}</p>
     </div>
     <div layout="row">
-        <div ng-repeat="merc in groupA.mercs" flex="20">
+        <div ng-repeat="merc in groupA.mercs track by $index" flex="20">
             <p><strong>Nombre: {{merc.name}} [{{merc.nivel}}]</strong></p>
             <p><em>Fuerza</em>: {{merc.fuerza}}</p>
             <p><em>Constitución</em>: {{merc.constitucion}}</p>
@@ -17,6 +17,7 @@
             <p>Daño: {{merc.dano}}</p>
             <p>Reducción: {{merc.reduccion}}</p>
             <p>Vida: {{merc.vida}}</p>
+            <p>Vida restante: {{merc.vidaRestante}}</p>
             <p>Reflejos: {{merc.reflejos}}</p>
             <p>Sigilo: {{merc.sigilo}}</p>
             <p>Percepción: {{merc.percepcion}}</p>
@@ -37,7 +38,7 @@
         <p flex>Miedo: {{groupB.stats.miedo}}</p>
     </div>
     <div layout="row">
-        <div ng-repeat="merc in groupB.mercs" flex="20">
+        <div ng-repeat="merc in groupB.mercs track by $index" flex="20">
             <p><strong>Nombre: {{merc.name}} [{{merc.nivel}}]</strong></p>
             <p><em>Fuerza</em>: {{merc.fuerza}}</p>
             <p><em>Constitución</em>: {{merc.constitucion}}</p>
@@ -46,6 +47,7 @@
             <p>Daño: {{merc.dano}}</p>
             <p>Reducción: {{merc.reduccion}}</p>
             <p>Vida: {{merc.vida}}</p>
+            <p>Vida restante: {{merc.vidaRestante}}</p>
             <p>Reflejos: {{merc.reflejos}}</p>
             <p>Sigilo: {{merc.sigilo}}</p>
             <p>Percepción: {{merc.percepcion}}</p>

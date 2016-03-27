@@ -28,16 +28,14 @@ angular.module('utils.module', [])
 
         /**
          * Ordena los personajes de ambos grupos, según sus reflejos y bonos, por orden de actuación
-         * @param grupoA
-         * @param grupoB
+         * @param arrayTodos
          * @param bonoA Bono a los reflejos para el grupo A
          * @param bonoB Bono a los reflejos para el grupo B
-         * @returns {Array.<T>} Array con todos los personajes ordenados
+         * @param idGrupoQueEmbosca null si ninguno embosca
+         * @returns {Array.<T>} Array con los ids de todos los personajes ordenados
          */
-        function fnOrdenarPersonajesPorReflejos(grupoA, grupoB, bonoA, bonoB) {
-            var mercenarios = grupoA.mercs.concat(grupoB.mercs);
-
-            var ordenados = mercenarios.sort(function (a, b) {
+        function fnOrdenarPersonajesPorReflejos(arrayTodos, bonoA, bonoB, idGrupoQueEmbosca) {
+            var ordenados = arrayTodos.sort(function (a, b) {
                 var aReflejos = a.reflejos, bReflejos = b.reflejos;
 
                 // Aplico bono
@@ -54,8 +52,17 @@ angular.module('utils.module', [])
                 return aReflejos - bReflejos;
             });
 
+            // Saco un array con los ids ordenados y de paso miro si embosca alguien o no
+            var idsOrdenados = [];
+            ordenados.forEach(function (pj) {
+                if (!idGrupoQueEmbosca || (idGrupoQueEmbosca === pj.group)) {
+                    idsOrdenados.push(pj.id);
+                }
+            });
+
             console.log(ordenados);
-            return ordenados;
+            console.log(idsOrdenados);
+            return idsOrdenados;
         }
 
         /**
@@ -64,33 +71,36 @@ angular.module('utils.module', [])
          * @param idGrupoEmbosca
          * @returns {Array}
          */
-        function fnEmboscada(personajes, idGrupoEmbosca) {
-            var arrayFinal = [];
+        /* function fnEmboscada(personajes, idGrupoEmbosca) {
+         var arrayFinal = [];
 
-            // Cojo sólo los personajes de ese grupo
-            if (personajes.length > 0) {
-                personajes.forEach(function (pj) {
-                    if (pj.group === idGrupoEmbosca) {
-                        arrayFinal.push(pj);
-                    }
-                });
-            }
+         // Cojo sólo los personajes de ese grupo
+         if (personajes.length > 0) {
+         personajes.forEach(function (pj) {
+         if (pj.group === idGrupoEmbosca) {
+         arrayFinal.push(pj);
+         }
+         });
+         }
 
-            return arrayFinal;
-        }
+         return arrayFinal;
+         }*/
 
         /**
          * Calcula la amenaza de cada personaje en función de diferentes cosas:
          *  nivel, cuánto destacan sus stats respecto de la media,
          * @param arrayPjs
          * @param idGrupoA
-         * @returns {Array}
+         * @param idGrupoB
+         * @returns {Array} ids de pjs ordenados por amenaza
          */
-        function fnCalcularAmenazaPersonajes(arrayPjs, idGrupoA) {
+        function fnCalcularAmenazaPersonajes(arrayPjs, idGrupoA, idGrupoB) {
             var resultado = {
-                "grupoA": [],
-                "grupoB": []
+                "grupoAtemp": [],
+                "grupoBtemp": []
             };
+            resultado[idGrupoA] = [];
+            resultado[idGrupoB] = [];
 
             // Media de stats
             var mFuerza = 0, mConstitucion = 0, mAgilidad = 0, mConocimiento = 0, mVidaRestante = 0;
@@ -118,21 +128,46 @@ angular.module('utils.module', [])
                 pj.amenaza = pj.nivel + pos;
 
                 if (idGrupoA === pj.group) {
-                    resultado.grupoA.push(pj);
+                    resultado.grupoAtemp.push(pj);
                 } else {
-                    resultado.grupoB.push(pj);
+                    resultado.grupoBtemp.push(pj);
                 }
             });
 
             // Ordeno los arrays por amenaza
-            resultado.grupoA = resultado.grupoA.sort(function (a, b) {
-                return a.amenaza - b.amenaza;
+            resultado.grupoAtemp = resultado.grupoAtemp.sort(function (a, b) {
+                return b.amenaza - a.amenaza;
             });
-            resultado.grupoB = resultado.grupoB.sort(function (a, b) {
-                return a.amenaza - b.amenaza;
+            resultado.grupoBtemp = resultado.grupoBtemp.sort(function (a, b) {
+                return b.amenaza - a.amenaza;
             });
 
+            // Dejo sólo los IDs
+            resultado[idGrupoA] = resultado.grupoAtemp.map(function (current) {
+                return {"id": current.id, "amenaza": current.amenaza};
+            });
+            resultado[idGrupoB] = resultado.grupoBtemp.map(function (current) {
+                return {"id": current.id, "amenaza": current.amenaza};
+            });
+
+            delete resultado.grupoAtemp;
+            delete resultado.grupoBtemp;
+
             return resultado;
+        }
+
+
+        /**
+         * Dado un grupo de personajes ordenados por amenaza, devuelvo el ID del primero
+         * @param grupo
+         * @returns {*}
+         */
+        function fnSeleccionaObjetivo(grupo) {
+            if (grupo.length > 0) {
+                return grupo[0].id;
+            } else {
+                return null;
+            }
         }
 
         /**
@@ -154,6 +189,21 @@ angular.module('utils.module', [])
         }
 
         /**
+         * Cuenta los personajes que quedan en el grupo
+         * @param grupo
+         */
+        function fnContarPersonajes(grupo) {
+            var cuenta = 0;
+            grupo.forEach(function (pj) {
+                if (pj) {
+                    cuenta++;
+                }
+            });
+
+            return cuenta;
+        }
+
+        /**
          * Simula que lanza Y dados de X caras
          * @param caras X
          * @param amount Y
@@ -172,7 +222,9 @@ angular.module('utils.module', [])
             dado: fnDado,
             ordenarPersonajesPorReflejos: fnOrdenarPersonajesPorReflejos,
             listarPersonajes: fnListarPersonajes,
-            emboscada: fnEmboscada,
-            calcularAmenazaPersonajes: fnCalcularAmenazaPersonajes
+            // emboscada: fnEmboscada,
+            calcularAmenazaPersonajes: fnCalcularAmenazaPersonajes,
+            seleccionaObjetivo: fnSeleccionaObjetivo,
+            contarPersonajes: fnContarPersonajes
         };
     }]);
